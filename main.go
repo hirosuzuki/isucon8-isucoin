@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"fmt"
 	"isucon8/isucoin/controller"
@@ -8,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"crypto/tls"
 
 	gctx "github.com/gorilla/context"
 	"github.com/gorilla/sessions"
@@ -53,7 +53,7 @@ func main() {
 	}
 
 	dsn := fmt.Sprintf(`%s@tcp(%s:%s)/%s?parseTime=true&loc=Local&charset=utf8mb4`, dbusrpass, dbhost, dbport, dbname)
-	db, err := sql.Open("mysql", dsn)
+	db, err := sql.Open("mysql:logger", dsn)
 	if err != nil {
 		log.Fatalf("mysql connect failed. err: %s", err)
 	}

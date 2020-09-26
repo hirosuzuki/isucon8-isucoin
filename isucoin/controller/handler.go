@@ -12,6 +12,7 @@ import (
 	"isucon8/isucoin/model"
 
 	"github.com/gorilla/sessions"
+	tracer "github.com/hirosuzuki/go-isucon-tracer"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 )
@@ -38,6 +39,9 @@ func NewHandler(db *sql.DB, store sessions.Store) *Handler {
 }
 
 func (h *Handler) Initialize(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if true {
+		tracer.Start()
+	}
 	err := h.txScope(func(tx *sql.Tx) error {
 		if err := model.InitBenchmark(tx); err != nil {
 			return err
