@@ -133,6 +133,67 @@ func (h *Handler) Signout(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	h.handleSuccess(w, struct{}{})
 }
 
+var infoZero map[string]interface{}
+
+func MakeInfoZero(db *sql.DB) {
+	var err error
+	lt := time.Unix(0, 0)
+	res := make(map[string]interface{}, 10)
+
+	bySecTime := BaseTime.Add(-300 * time.Second)
+	if lt.After(bySecTime) {
+		bySecTime = time.Date(lt.Year(), lt.Month(), lt.Day(), lt.Hour(), lt.Minute(), lt.Second(), 0, lt.Location())
+	}
+	res["chart_by_sec"], err = model.GetCandlestickData(db, bySecTime, "%Y-%m-%d %H:%i:%s")
+	if err != nil {
+		log.Printf("MakeInfoZero: Err GetCandlestickData Sec")
+		return
+	}
+
+	byMinTime := BaseTime.Add(-300 * time.Minute)
+	if lt.After(byMinTime) {
+		byMinTime = time.Date(lt.Year(), lt.Month(), lt.Day(), lt.Hour(), lt.Minute(), 0, 0, lt.Location())
+	}
+	res["chart_by_min"], err = model.GetCandlestickData(db, byMinTime, "%Y-%m-%d %H:%i:00")
+	if err != nil {
+		log.Printf("MakeInfoZero: Err GetCandlestickData Min")
+		return
+	}
+
+	byHourTime := BaseTime.Add(-48 * time.Hour)
+	if lt.After(byHourTime) {
+		byHourTime = time.Date(lt.Year(), lt.Month(), lt.Day(), lt.Hour(), 0, 0, 0, lt.Location())
+	}
+	res["chart_by_hour"], err = model.GetCandlestickData(db, byHourTime, "%Y-%m-%d %H:00:00")
+	if err != nil {
+		log.Printf("MakeInfoZero: Err GetCandlestickData Hour")
+		return
+	}
+
+	lowestSellOrder, err := model.GetLowestSellOrder(db)
+	switch {
+	case err == sql.ErrNoRows:
+	case err != nil:
+		log.Printf("MakeInfoZero: Err GetLowestSellOrder")
+		return
+	default:
+		res["lowest_sell_price"] = lowestSellOrder.Price
+	}
+
+	highestBuyOrder, err := model.GetHighestBuyOrder(db)
+	switch {
+	case err == sql.ErrNoRows:
+	case err != nil:
+		log.Printf("MakeInfoZero: Err GetHighestBuyOrder")
+		return
+	default:
+		res["highest_buy_price"] = highestBuyOrder.Price
+	}
+
+	infoZero = res
+	log.Printf("MakeInfoZero: Update OK")
+}
+
 func (h *Handler) Info(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var (
 		err         error
@@ -140,7 +201,14 @@ func (h *Handler) Info(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 		lt          = time.Unix(0, 0)
 		res         = make(map[string]interface{}, 10)
 	)
-	if _cursor := r.URL.Query().Get("cursor"); _cursor != "" {
+
+	// TODO: trueにするとシェアボタンが有効になるが、アクセスが増えてヤバイので一旦falseにしておく
+	res["enable_share"] = false
+
+	_cursor := r.URL.Query().Get("cursor")
+	user, _ := h.userByRequest(r)
+
+	if _cursor != "" {
 		if lastTradeID, _ = strconv.ParseInt(_cursor, 10, 64); lastTradeID > 0 {
 			trade, err := model.GetTradeByID(h.db, lastTradeID)
 			if err != nil && err != sql.ErrNoRows {
@@ -158,7 +226,7 @@ func (h *Handler) Info(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 		return
 	}
 	res["cursor"] = latestTrade.ID
-	user, _ := h.userByRequest(r)
+
 	if user != nil {
 		orders, err := model.GetOrdersByUserIDAndLastTradeId(h.db, user.ID, lastTradeID)
 		if err != nil {
@@ -172,6 +240,26 @@ func (h *Handler) Info(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 			}
 		}
 		res["traded_orders"] = orders
+	}
+
+	if _cursor == "" || _cursor == "0" {
+		if v, ok := infoZero["chart_by_sec"]; ok {
+			res["chart_by_sec"] = v
+		}
+		if v, ok := infoZero["chart_by_min"]; ok {
+			res["chart_by_min"] = v
+		}
+		if v, ok := infoZero["chart_by_hour"]; ok {
+			res["chart_by_hour"] = v
+		}
+		if v, ok := infoZero["lowest_sell_price"]; ok {
+			res["lowest_sell_price"] = v
+		}
+		if v, ok := infoZero["highest_buy_price"]; ok {
+			res["highest_buy_price"] = v
+		}
+		h.handleSuccess(w, res)
+		return
 	}
 
 	bySecTime := BaseTime.Add(-300 * time.Second)
@@ -223,8 +311,6 @@ func (h *Handler) Info(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	default:
 		res["highest_buy_price"] = highestBuyOrder.Price
 	}
-	// TODO: trueにするとシェアボタンが有効になるが、アクセスが増えてヤバイので一旦falseにしておく
-	res["enable_share"] = false
 
 	h.handleSuccess(w, res)
 }

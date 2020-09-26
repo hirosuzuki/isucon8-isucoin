@@ -60,6 +60,13 @@ func main() {
 	db.SetMaxIdleConns(100)
 	db.SetMaxOpenConns(100)
 
+	go func() {
+		for true {
+			controller.MakeInfoZero(db)
+			time.Sleep(700 * time.Millisecond)
+		}
+	}()
+
 	store := sessions.NewCookieStore([]byte(SessionSecret))
 
 	h := controller.NewHandler(db, store)
