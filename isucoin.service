@@ -1,0 +1,18 @@
+[Unit]
+Description = isucoin application
+
+[Service]
+LimitNOFILE=102400
+LimitNPROC=102400
+
+WorkingDirectory=/home/isucon/isucon8-final/webapp
+
+ExecStart = /home/isucon/isucon8-final/webapp/start.sh
+
+Restart   = always
+Type      = simple
+User      = isucon
+Group     = isucon
+
+[Install]
+WantedBy = multi-user.target
