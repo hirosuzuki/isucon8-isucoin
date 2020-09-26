@@ -135,7 +135,7 @@ func DeleteOrder(tx *sql.Tx, userID, orderID int64, reason string) error {
 	if err != nil {
 		return errors.Wrapf(err, "getUserByIDWithLock failed. id:%d", userID)
 	}
-	order, err := getOrderByIDWithLock(tx, orderID)
+	order, err := GetOrderByID(tx, orderID)
 	switch {
 	case err == sql.ErrNoRows:
 		return ErrOrderNotFound
@@ -150,8 +150,13 @@ func DeleteOrder(tx *sql.Tx, userID, orderID int64, reason string) error {
 }
 
 func cancelOrder(d QueryExecutor, order *Order, reason string) error {
-	if _, err := d.Exec(`UPDATE orders SET closed_at = NOW(6) WHERE id = ?`, order.ID); err != nil {
+	result, err := d.Exec(`UPDATE orders SET closed_at = NOW(6) WHERE id = ? AND closed_at IS NULL`, order.ID)
+	if err != nil {
 		return errors.Wrap(err, "update orders for cancel")
+	}
+	v, _ := result.RowsAffected()
+	if v <= 0 {
+		return errors.Wrap(err, "update orders for cancel (no rec)")
 	}
 	sendLog(d, order.Type+".delete", map[string]interface{}{
 		"order_id": order.ID,
