@@ -69,6 +69,23 @@ func main() {
 		}
 	}()
 
+	/*
+		go func() {
+			messages = make(chan Log, 10)
+			for true {
+				m := <-messages
+				ms := []Log{m}
+				for len(messages) > 0 && len(ms) < 9 {
+					m := <-messages
+					ms = append(ms, m)
+				}
+				b, _ := model.Logger(db)
+				b.request("/send_bulk", ms)
+				log.Printf("Log Send %v\n", ms)
+			}
+		}
+	*/
+
 	store := sessions.NewCookieStore([]byte(SessionSecret))
 
 	h := controller.NewHandler(db, store)

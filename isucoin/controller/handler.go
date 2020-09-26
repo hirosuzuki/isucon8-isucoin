@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"isucon8/isucoin/model"
+	"isucon8/isulogger"
 
 	"github.com/gorilla/sessions"
 	tracer "github.com/hirosuzuki/go-isucon-tracer"
@@ -56,6 +57,8 @@ func (h *Handler) Initialize(w http.ResponseWriter, r *http.Request, _ httproute
 				return errors.Wrapf(err, "set setting failed. %s", k)
 			}
 		}
+		logger, _ := model.Logger(tx)
+		isulogger.DefaultLogger = logger
 		return nil
 	})
 	if err != nil {

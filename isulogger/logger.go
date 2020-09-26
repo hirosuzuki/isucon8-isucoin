@@ -42,6 +42,8 @@ func NewIsulogger(endpoint, appID string) (*Isulogger, error) {
 	}, nil
 }
 
+var DefaultLogger *Isulogger
+
 // Send はログを送信します
 func (b *Isulogger) Send(tag string, data interface{}) error {
 	return b.request("/send", Log{
