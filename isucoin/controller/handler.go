@@ -242,7 +242,8 @@ func (h *Handler) Info(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 		res["traded_orders"] = orders
 	}
 
-	if _cursor == "" || _cursor == "0" {
+	//if _cursor == "" || _cursor == "0" {
+	if true {
 		if v, ok := infoZero["chart_by_sec"]; ok {
 			res["chart_by_sec"] = v
 		}
