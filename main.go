@@ -57,6 +57,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("mysql connect failed. err: %s", err)
 	}
+	db.SetMaxIdleConns(100)
+	db.SetMaxOpenConns(100)
+
 	store := sessions.NewCookieStore([]byte(SessionSecret))
 
 	h := controller.NewHandler(db, store)
