@@ -37,6 +37,8 @@ func getEnv(key, def string) string {
 
 func main() {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 32
+
 	var (
 		port   = getEnv("APP_PORT", "5000")
 		dbhost = getEnv("DB_HOST", "127.0.0.1")
