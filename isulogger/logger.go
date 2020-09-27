@@ -44,13 +44,28 @@ func NewIsulogger(endpoint, appID string) (*Isulogger, error) {
 
 var DefaultLogger *Isulogger
 
+var messages = make(chan Log, 10)
+
+func SendLoop() {
+	for true {
+		m := <-messages
+		ms := []Log{m}
+		for len(messages) > 0 && len(ms) < 9 {
+			m := <-messages
+			ms = append(ms, m)
+		}
+		DefaultLogger.request("/send_bulk", ms)
+	}
+}
+
 // Send はログを送信します
 func (b *Isulogger) Send(tag string, data interface{}) error {
-	return b.request("/send", Log{
+	messages <- Log{
 		Tag:  tag,
 		Time: time.Now(),
 		Data: data,
-	})
+	}
+	return nil
 }
 
 func (b *Isulogger) request(p string, v interface{}) error {
