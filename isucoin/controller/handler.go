@@ -194,7 +194,7 @@ func MakeInfoZero(db *sql.DB) {
 	}
 
 	infoZero = res
-	log.Printf("MakeInfoZero: Update OK")
+	//log.Printf("MakeInfoZero: Update OK")
 }
 
 func (h *Handler) Info(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
