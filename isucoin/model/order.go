@@ -28,11 +28,11 @@ type Order struct {
 }
 
 func GetOrdersByUserID(d QueryExecutor, userID int64) ([]*Order, error) {
-	return scanOrders(d.Query("SELECT * FROM orders WHERE user_id = ? AND (closed_at IS NULL OR trade_id IS NOT NULL) ORDER BY created_at ASC", userID))
+	return scanOrdersWithTrade(d.Query("SELECT o.*, t.* FROM orders o LEFT JOIN trade t ON t.id = o.trade_id WHERE o.user_id = ? AND (o.closed_at IS NULL OR o.trade_id IS NOT NULL) ORDER BY o.created_at", userID))
 }
 
 func GetOrdersByUserIDAndLastTradeId(d QueryExecutor, userID int64, tradeID int64) ([]*Order, error) {
-	return scanOrders(d.Query(`SELECT * FROM orders WHERE user_id = ? AND trade_id IS NOT NULL AND trade_id > ? ORDER BY created_at ASC`, userID, tradeID))
+	return scanOrdersWithTrade(d.Query(`SELECT o.*, t.* FROM orders o LEFT JOIN trade t ON t.id = o.trade_id WHERE o.user_id = ? AND o.trade_id IS NOT NULL AND o.trade_id > ? ORDER BY o.created_at`, userID, tradeID))
 }
 
 func getOpenOrderByID(tx *sql.Tx, id int64) (*Order, error) {

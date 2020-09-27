@@ -63,6 +63,41 @@ func scanOrders(rows *sql.Rows, e error) (orders []*Order, err error) {
 	return
 }
 
+func scanOrdersWithTrade(rows *sql.Rows, e error) (orders []*Order, err error) {
+	if e != nil {
+		return nil, e
+	}
+	defer func() {
+		err = rows.Close()
+	}()
+	orders = []*Order{}
+	for rows.Next() {
+		var v Order
+		var closedAt mysql.NullTime
+		var tradeID sql.NullInt64
+		var _tradeID sql.NullInt64
+		var tradeAmount sql.NullInt64
+		var tradePrice sql.NullInt64
+		var tradeCreatedAt sql.NullTime
+		if err = rows.Scan(&v.ID, &v.Type, &v.UserID, &v.Amount, &v.Price, &closedAt, &tradeID, &v.CreatedAt, &_tradeID, &tradeAmount, &tradePrice, &tradeCreatedAt); err != nil {
+			return nil, err
+		}
+		if closedAt.Valid {
+			v.ClosedAt = &closedAt.Time
+		}
+		if tradeID.Valid {
+			v.TradeID = tradeID.Int64
+		}
+		if _tradeID.Valid {
+			t := Trade{ID: _tradeID.Int64, Amount: tradeAmount.Int64, Price: tradePrice.Int64, CreatedAt: tradeCreatedAt.Time}
+			v.Trade = &t
+		}
+		orders = append(orders, &v)
+	}
+	err = rows.Err()
+	return
+}
+
 func scanOrder(rows *sql.Rows, err error) (*Order, error) {
 	v, err := scanOrders(rows, err)
 	if err != nil {
