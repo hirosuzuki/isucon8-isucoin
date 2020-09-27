@@ -211,6 +211,12 @@ func (h *Handler) Info(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	_cursor := r.URL.Query().Get("cursor")
 	user, _ := h.userByRequest(r)
 
+	if user != nil {
+		if user.ID%10 < 1 {
+			res["enable_share"] = true
+		}
+	}
+
 	if _cursor != "" {
 		if lastTradeID, _ = strconv.ParseInt(_cursor, 10, 64); lastTradeID > 0 {
 			trade, err := model.GetTradeByID(h.db, lastTradeID)
