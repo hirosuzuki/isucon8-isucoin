@@ -68,10 +68,16 @@ func (h *Handler) Initialize(w http.ResponseWriter, r *http.Request, _ httproute
 	}
 }
 
+var failMap = map[string]int64{}
+
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	name := r.FormValue("name")
 	bankID := r.FormValue("bank_id")
 	password := r.FormValue("password")
+	if failMap[bankID] >= 5 {
+		h.handleError(w, errors.New("BAN"), 403)
+		return
+	}
 	if name == "" || bankID == "" || password == "" {
 		h.handleError(w, errors.New("all parameters are required"), 400)
 		return
@@ -82,6 +88,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 	switch {
 	case err == model.ErrBankUserNotFound:
 		// TODO: 失敗が多いときに403を返すBanの仕様に対応
+		failMap[bankID]++
 		h.handleError(w, err, 404)
 	case err == model.ErrBankUserConflict:
 		h.handleError(w, err, 409)
@@ -95,6 +102,10 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 func (h *Handler) Signin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	bankID := r.FormValue("bank_id")
 	password := r.FormValue("password")
+	if failMap[bankID] >= 5 {
+		h.handleError(w, errors.New("BAN"), 403)
+		return
+	}
 	if bankID == "" || password == "" {
 		h.handleError(w, errors.New("all parameters are required"), 400)
 		return
@@ -103,6 +114,7 @@ func (h *Handler) Signin(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 	switch {
 	case err == model.ErrUserNotFound:
 		// TODO: 失敗が多いときに403を返すBanの仕様に対応
+		failMap[bankID]++
 		h.handleError(w, err, 404)
 	case err != nil:
 		h.handleError(w, err, 500)
