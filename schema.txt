@@ -35,3 +35,7 @@ CREATE TABLE `user` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `bank_id` (`bank_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX trade_id ON trade (id);
+CREATE INDEX trade_price ON trade (price);
+CREATE INDEX orders ON orders (id);
