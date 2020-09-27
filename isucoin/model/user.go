@@ -34,7 +34,7 @@ func UserSignup(tx *sql.Tx, name, bankID, password string) error {
 	if err = bank.Check(bankID, 0); err != nil {
 		return ErrBankUserNotFound
 	}
-	pass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	pass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 	if err != nil {
 		return err
 	}
@@ -72,6 +72,10 @@ func UserLogin(d QueryExecutor, bankID, password string) (*User, error) {
 			return nil, ErrUserNotFound
 		}
 		return nil, err
+	}
+	if user.Password[0:7] != "$2a$04$" {
+		pass, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+		d.Exec("UPDATE user SET password = ? WHERE id = ?", pass, user.ID)
 	}
 	sendLog(d, "signin", map[string]interface{}{
 		"user_id": user.ID,
